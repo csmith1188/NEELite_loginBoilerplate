@@ -1,0 +1,16 @@
+{
+  "accounts": {
+    "bob": {
+      "password": "GFjQbtRJ"
+    },
+    "john": {
+      "password": "46Ph2skE"
+    },
+    "dan": {
+      "password": "zhxG2JGv"
+    },
+    "ryan": {
+      "password": "3fFDAmRW"
+    }
+  }
+}
