@@ -22,7 +22,6 @@ app.use(session({
 
 // Setup Variables
 const port = 3000;
-var data;
 
 
 // Functions
@@ -39,7 +38,7 @@ function isAuthenticated (request, response, next) {
 // Webpages
 app.get('/', isAuthenticated, function(request, response) {
   try {
-    response.render('index.ejs', {data: data, user:request.session.user});
+    response.render('index.ejs', {user:request.session.user});
   }
   catch(error) {
     response.send(error.message);
@@ -48,7 +47,7 @@ app.get('/', isAuthenticated, function(request, response) {
 
 app.get('/login', function(request, response) {
   try {
-    response.render('login.ejs', {data: data});
+    response.render('login.ejs');
   }
   catch(error) {
     response.send(error.message);
@@ -73,7 +72,7 @@ app.post('/login', function(request, response) {
 
 app.get('/signup', function(request, response) {
   try {
-    response.render('signup.ejs', {data: data});
+    response.render('signup.ejs');
   }
   catch(error) {
     response.send(error.message);
@@ -114,7 +113,7 @@ app.get('/logout', function(request, response) {
 
 app.get('/changePassword', function(request, response) {
   try {
-    response.render('changePassword.ejs', {data: data});
+    response.render('changePassword.ejs');
   }
   catch(error) {
     response.send(error.message);
