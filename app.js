@@ -2,6 +2,7 @@
 const express = require('express');
 const session = require('express-session');
 const sqlite3 = require('sqlite3').verbose();
+const bcrypt = require('bcrypt');
 
 
 // Database Setup
@@ -57,14 +58,22 @@ app.get('/login', function(request, response) {
 app.post('/login', function(request, response) {
   const {username, password} = request.body;
   request.session.regenerate(function (error) {
-  if (error) throw error;
-  if (username && password) {
-      database.get(`SELECT * FROM users Where username = ? AND password = ?`, [username, password], function(error, results) {
-	      if (error) throw error;
-	      if (results) {
-          request.session.user = username;
-          response.redirect('/');
-	      }
+    if (error) throw error;
+    if (username && password) {
+      database.get(`SELECT * FROM users Where username = ?`, [username], function(error, results) {
+        if (error) throw error;
+        if (results) {
+          let databasePassword = results.password
+          bcrypt.compare(password, databasePassword, (error, isMatch) => {
+            if (isMatch) {
+	            if (error) throw error;
+	            if (results) {
+                request.session.user = username;
+                response.redirect('/');
+	            }
+            } else response.redirect('/login');
+          })
+        } else response.redirect('/login')
       })
     } else response.redirect('/login');
   })
@@ -84,17 +93,20 @@ app.post('/signup', function(request, response) {
   request.session.regenerate(function (error) {
     if (error) throw error;
     if (username && password && confirmPassword) {
-      database.get(`SELECT * FROM users Where username = ?`, [username], function(error, results) {
+      database.get(`SELECT * FROM users Where username = ?`, [username], (error, results) => {
         if (error) throw error;
 	      if (!results) {
           if (password == confirmPassword) {
-            database.get('INSERT INTO users (username, password ) VALUES(?,?)', [username, password], function(error, results) {
-	            if (error) throw error;
-              request.session.user = username;
-              response.redirect('/');
+            bcrypt.hash(password, 10, function(error, hashedPassword) {
+              if (error) throw error;
+              database.get(`INSERT INTO users (username, password ) VALUES (?, ?)`, [username, hashedPassword], (error, results) => {
+                if (error) throw error;
+                request.session.user = username;
+                response.redirect('/');
+              })
             })
           }
-        }
+        } 
       })
     } else response.redirect('/signup');
   })
@@ -123,15 +135,31 @@ app.get('/changePassword', function(request, response) {
 app.post('/changePassword', function(request, response) {
   const {currentPassword, newPassword, confirmNewPassword} = request.body;
   const username = request.session.user;
-  database.get('SELECT password FROM users Where username = ?', [username], function (error, results) {
+  database.get(`SELECT password FROM users Where username = ?`, [username], function (error, results) {
     if (error) throw error;
-    if (results.password) {
-      if (results.password == currentPassword && newPassword == confirmNewPassword) {
-        database.get('UPDATE users SET password = newPassword WHERE user = ?', [username], function (error, results) {
-          response.redirect('/logout');
-        })
-      }
+    if (results) {
+      bcrypt.compare(currentPassword, results.password, (error, isMatch) => {
+        if (error) throw error;
+        if (isMatch && newPassword == confirmNewPassword) {
+          bcrypt.hash(newPassword, 10, (error, hashedPassword) => {
+            if (error) throw error;
+            database.get('UPDATE users SET password = ? WHERE username = ?', [hashedPassword, username], (error, results) => {
+              if (error) throw error;
+              response.redirect('/logout')
+            })
+          })
+        } else response.redirect('/')
+      })
     } else response.redirect('/');
+  })
+})
+
+
+app.get('/deleteAccount', function(request, response) {
+  username = request.session.user
+  database.get('DELETE FROM users WHERE username = ?', [username], (error, results) => {
+    if (error) throw error;
+    if (results) response.redirect('/logout')
   })
 })
 
