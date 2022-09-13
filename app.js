@@ -159,7 +159,7 @@ app.get('/deleteAccount', function(request, response) {
   username = request.session.user
   database.get('DELETE FROM users WHERE username = ?', [username], (error, results) => {
     if (error) throw error;
-    if (results) response.redirect('/logout')
+    response.redirect('/logout')
   })
 })
 
