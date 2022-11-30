@@ -1,16 +1,25 @@
-
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Home</title>
-    </head>
-    <body>
-        <p>Welcome Back <%=user%>!!</p>
-        <a href="/logout">logout</a>
-        <a href="/changePassword">Change Password</a>
-        <a href="/deleteAccount">Delete Account</a>
-    </body>
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+    <script>
+        function confirmDelete() {
+            if (confirm('Are you sure you want to delete your account?')) {
+                window.location.href = "/deleteAccount";
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <p>Welcome Back <%=user%>!!</p>
+    <a href="/logout">logout</a>
+    <a href="/changePassword">Change Password</a>
+    <a href="" onclick='confirmDelete()'>Delete Account</a>
+</body>
+
 </html>
