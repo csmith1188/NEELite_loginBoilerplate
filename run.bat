@@ -1,2 +1,1 @@
-node app.js
-pause
+npm i & node app.js pause

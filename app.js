@@ -1,103 +1,171 @@
 // Import Modules
-const fs = require("fs");
 const express = require('express');
 const session = require('express-session');
+const sqlite3 = require('sqlite3').verbose();
+const bcrypt = require('bcrypt');
+
+
+// Database Setup
+const database = new sqlite3.Database('./database.db', sqlite3.OPEN_READWRITE);
 
 
 // Express Setup
 const app = express();
-app.use(express.json())
-app.use(express.urlencoded({ extended: true }))
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.set('view engine', 'ejs');
 app.use(session({
-  secret: 'AHDFOAHDFBIHBLFFOGUJBDYDHFOISADP',
+  secret: 'D$jtDD_}g#T+vg^%}qpi~+2BCs=R!`}O',
   resave: false,
   saveUninitialized: false
 }));
 
 
 // Setup Variables
-var data;
+const port = 3000;
 
 
 // Functions
-function readData() {
-  let rawData = fs.readFileSync('data.json');
-  data = JSON.parse(rawData);
-}
-
-function writeData() {
-  data = JSON.stringify(data);
-  fs.writeFileSync('data.json', data);
-}
-
-
-function isAuthenticated (request, response, next) {
+function isAuthenticated(request, response, next) {
   if (request.session.user) {
-    next()
+    next();
   }
   else {
-    response.redirect('/login')
+    response.redirect('/login');
   }
 }
 
 
 // Webpages
-app.get('/', isAuthenticated, function(request, response) {
+app.get('/', isAuthenticated, function (request, response) {
   try {
-    response.render('index.ejs', {data: data})
+    response.render('index.ejs', { user: request.session.user });
   }
-  catch(err) {
-    response.send(err.message)
+  catch (error) {
+    response.send(error.message);
   }
 })
 
-app.get('/bootstrap', function(request, response) {
+app.get('/login', function (request, response) {
   try {
-    response.sendFile(__dirname + '/node_modules/bootstrap/dist/css/bootstrap.min.css')
+    response.render('login.ejs');
   }
-  catch(err) {
-    response.send(err.message)
+  catch (error) {
+    response.send(error.message);
   }
 })
 
-app.get('/login', function(request, response) {
-  try {
-    response.render('login.ejs', {data: data})
-  }
-  catch(err) {
-    response.send(err.message)
-  }
-})
-
-app.post('/login', function(request, response) {
-  const {username, password} = request.body
-  request.session.regenerate(function (err) {
-    if (err) next(err)
-    if (!username || !password) response.redirect('/login')
-    else {
-     if (data.accounts[username].password == password) {
-       request.session.user = username;
-       request.session.save(function (err) {
-       if (err) return next(err);
-          response.redirect('/');
-        })
-      } else response.redirect('/login');
-    }
+app.post('/login', function (request, response) {
+  const { username, password } = request.body;
+  request.session.regenerate(function (error) {
+    if (error) throw error;
+    if (username && password) {
+      database.get(`SELECT * FROM users Where username = ?`, [username], function (error, results) {
+        if (error) throw error;
+        if (results) {
+          let databasePassword = results.password
+          bcrypt.compare(password, databasePassword, (error, isMatch) => {
+            if (isMatch) {
+              if (error) throw error;
+              request.session.user = username;
+              response.redirect('/');
+            } else response.redirect('/login');
+          })
+        } else response.redirect('/login')
+      })
+    } else response.redirect('/login')
   })
-});
+})
 
-app.get('/logout', function(request, response) {
+app.get('/signup', function (request, response) {
+  try {
+    response.render('signup.ejs');
+  }
+  catch (error) {
+    response.send(error.message);
+  }
+})
+
+app.post('/signup', function (request, response) {
+  const { username, password, confirmPassword } = request.body;
+  request.session.regenerate(function (error) {
+    if (error) throw error;
+    if (username && password && confirmPassword) {
+      database.get(`SELECT * FROM users Where username = ?`, [username], (error, results) => {
+        if (error) throw error;
+        if (!results) {
+          if (password == confirmPassword) {
+            bcrypt.hash(password, 10, function (error, hashedPassword) {
+              if (error) throw error;
+              database.get(`INSERT INTO users (username, password ) VALUES (?, ?)`, [username, hashedPassword], (error) => {
+                if (error) throw error;
+                request.session.user = username;
+                response.redirect('/');
+              })
+            })
+          }
+        }
+      })
+    } else response.redirect('/signup');
+  })
+})
+
+app.get('/logout', function (request, response) {
   request.session.user = null;
-  request.session.save(function (err) {
-    if (err) next(err);
-    request.session.regenerate(function (err) {
-      if (err) next(err);
-      response.redirect('/login')
+  request.session.save(function (error) {
+    if (error) throw error;
+    request.session.regenerate(function (error) {
+      if (error) next(error);
+      response.redirect('/login');
     })
   })
-});
+})
+
+app.get('/changePassword', function (request, response) {
+  try {
+    response.render('changePassword.ejs');
+  }
+  catch (error) {
+    response.send(error.message);
+  }
+})
+
+app.post('/changePassword', function (request, response) {
+  const { currentPassword, newPassword, confirmNewPassword } = request.body;
+  const username = request.session.user;
+  database.get(`SELECT password FROM users Where username = ?`, [username], function (error, results) {
+    if (error) throw error;
+    if (results) {
+      bcrypt.compare(currentPassword, results.password, (error, isMatch) => {
+        if (error) throw error;
+        if (isMatch && newPassword == confirmNewPassword) {
+          bcrypt.hash(newPassword, 10, (error, hashedPassword) => {
+            if (error) throw error;
+            database.get('UPDATE users SET password = ? WHERE username = ?', [hashedPassword, username], (error, results) => {
+              if (error) throw error;
+              response.redirect('/logout')
+            })
+          })
+        } else response.redirect('/')
+      })
+    } else response.redirect('/');
+  })
+})
 
 
-readData();
-app.listen(3000)
+app.get('/deleteAccount', function (request, response) {
+  username = request.session.user
+  database.get('DELETE FROM users WHERE username = ?', [username], (error, results) => {
+    if (error) throw error;
+    response.redirect('/logout')
+  })
+})
+
+
+app.listen(port, function (err) {
+  if (err) {
+    console.error(err);
+  } else {
+    console.log(`Running on port ${port}`);
+  }
+})
