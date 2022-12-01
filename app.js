@@ -27,12 +27,8 @@ const port = 3000;
 
 // Functions
 function isAuthenticated(request, response, next) {
-  if (request.session.user) {
-    next();
-  }
-  else {
-    response.redirect('/login');
-  }
+  if (request.session.user) next();
+  else response.redirect('/login');
 }
 
 
@@ -103,19 +99,22 @@ app.post('/signup', function (request, response) {
                 response.redirect('/');
               })
             })
-          }
-        }
+          } else response.redirect('/signup');
+        } else response.redirect('/signup');
       })
     } else response.redirect('/signup');
   })
 })
 
 app.get('/logout', function (request, response) {
+  console.log(3);
   request.session.user = null;
   request.session.save(function (error) {
+    console.log(4);
     if (error) throw error;
     request.session.regenerate(function (error) {
-      if (error) next(error);
+      console.log(5);
+      if (error) throw error;
       response.redirect('/login');
     })
   })
@@ -143,10 +142,10 @@ app.post('/changePassword', function (request, response) {
             if (error) throw error;
             database.get('UPDATE users SET password = ? WHERE username = ?', [hashedPassword, username], (error, results) => {
               if (error) throw error;
-              response.redirect('/logout')
+              response.redirect('/logout');
             })
           })
-        } else response.redirect('/')
+        } else response.redirect('/');
       })
     } else response.redirect('/');
   })
@@ -154,10 +153,12 @@ app.post('/changePassword', function (request, response) {
 
 
 app.get('/deleteAccount', function (request, response) {
-  username = request.session.user
+  console.log(1);
+  username = request.session.user;
   database.get('DELETE FROM users WHERE username = ?', [username], (error, results) => {
+    console.log(2);
     if (error) throw error;
-    response.redirect('/logout')
+    response.redirect('/logout');
   })
 })
 
