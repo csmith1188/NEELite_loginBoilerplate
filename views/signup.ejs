@@ -12,17 +12,17 @@
     <form action="/signup" method="post">
         <div>
             <span>Username</span>
-            <input type="text" placeholder="Username" name="username">
+            <input type="text" placeholder="Username" name="username" autocomplete="username">
         </div>
         <div>
             <span>Password</span>
-            <input type="password" placeholder="Password" name="password">
+            <input type="password" placeholder="Password" name="password" autocomplete="password">
         </div>
         <div>
             <span>Confirm Password</span>
-            <input type="password" placeholder="Confirm Password" name="confirmPassword">
+            <input type="password" placeholder="Confirm Password" name="confirmPassword" autocomplete="confirmPassword">
         </div>
-        <button type="submit">Signup</button>
+        <input type="submit" value="Signup">
     </form>
     <a href="/">home</a>
     <a href="/login">Login</a>
