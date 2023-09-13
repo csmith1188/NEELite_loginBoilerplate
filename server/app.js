@@ -22,7 +22,6 @@ app.use(session({
 
 // Setup Constants
 const port = 3000
-const AUTH_PATH = 'localhost:3000'
 
 // Functions
 function isAuthenticated(request, response, next) {
@@ -48,15 +47,15 @@ app.get('/login', (request, response) => {
 app.post('/login', (request, response) => {
   const { username, password } = request.body
   request.session.regenerate((error) => {
-    if (error) throw error
+    if (error) console.log(error)
     if (username && password) {
       database.get(`SELECT * FROM users Where username = ?`, [username], (error, results) => {
-        if (error) throw error
+        if (error) console.log(error)
         if (results) {
           let databasePassword = results.password
           bcrypt.compare(password, databasePassword, (error, isMatch) => {
             if (isMatch) {
-              if (error) throw error
+              if (error) console.log(error)
               request.session.user = username
               response.redirect('/')
             } else response.redirect('/login')
@@ -79,16 +78,16 @@ app.get('/signup', (request, response) => {
 app.post('/signup', (request, response) => {
   const { username, password, confirmPassword } = request.body
   request.session.regenerate((error) => {
-    if (error) throw error
+    if (error) console.log(error)
     if (username && password && confirmPassword) {
       database.get(`SELECT * FROM users Where username = ?`, [username], (error, results) => {
-        if (error) throw error
+        if (error) console.log(error)
         if (!results) {
           if (password == confirmPassword) {
             bcrypt.hash(password, 10, (error, hashedPassword) => {
-              if (error) throw error
+              if (error) console.log(error)
               database.get(`INSERT INTO users (username, password ) VALUES (?, ?)`, [username, hashedPassword], (error) => {
-                if (error) throw error
+                if (error) console.log(error)
                 request.session.user = username
                 response.redirect('/')
               })
@@ -103,9 +102,9 @@ app.post('/signup', (request, response) => {
 app.get('/logout', (request, response) => {
   request.session.user = null
   request.session.save((error) => {
-    if (error) throw error
+    if (error) console.log(error)
     request.session.regenerate((error) => {
-      if (error) throw error
+      if (error) console.log(error)
       response.redirect('/login')
     })
   })
@@ -124,15 +123,15 @@ app.post('/changePassword', (request, response) => {
   const { currentPassword, newPassword, confirmNewPassword } = request.body
   const username = request.session.user
   database.get(`SELECT password FROM users Where username = ?`, [username], (error, results) => {
-    if (error) throw error
+    if (error) console.log(error)
     if (results) {
       bcrypt.compare(currentPassword, results.password, (error, isMatch) => {
-        if (error) throw error
+        if (error) console.log(error)
         if (isMatch && newPassword == confirmNewPassword) {
           bcrypt.hash(newPassword, 10, (error, hashedPassword) => {
-            if (error) throw error
+            if (error) console.log(error)
             database.get('UPDATE users SET password = ? WHERE username = ?', [hashedPassword, username], (error, results) => {
-              if (error) throw error
+              if (error) console.log(error)
               response.redirect('/logout')
             })
           })
@@ -146,18 +145,42 @@ app.post('/changePassword', (request, response) => {
 app.get('/deleteAccount', (request, response) => {
   username = request.session.user
   database.get('DELETE FROM users WHERE username = ?', [username], (error, results) => {
-    if (error) throw error
+    if (error) console.log(error)
     response.redirect('/logout')
   })
 })
 
 app.get('/oauth', (request, response) => {
-  console.log(
-    request.body,
-    request.params,
-    request.query
-  )
-  response.render('/oauth', {
+  let redirectURL = request.query.redirectURL
+  console.log(redirectURL)
+  response.render('oauth.ejs', {
+    redirectURL: redirectURL
+  })
+})
+
+app.post('/oauth', (request, response) => {
+  const {
+    username,
+    password,
+    redirectURL
+  } = request.body
+  request.session.regenerate((error) => {
+    if (error) console.log(error)
+    if (username && password) {
+      database.get(`SELECT * FROM users Where username = ?`, [username], (error, results) => {
+        if (error) console.log(error)
+        if (results) {
+          let databasePassword = results.password
+          bcrypt.compare(password, databasePassword, (error, isMatch) => {
+            if (isMatch) {
+              if (error) console.log(error)
+              request.session.user = username
+              response.redirect(`${redirectURL}?username=${username}`)
+            } else response.redirect(`/oauth?redirectURL=${redirectURL}`)
+          })
+        } else response.redirect(`/oauth?redirectURL=${redirectURL}`)
+      })
+    } else response.redirect(`/oauth?redirectURL=${redirectURL}`)
   })
 })
 

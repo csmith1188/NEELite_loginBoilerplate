@@ -9,7 +9,8 @@
 </head>
 
 <body>
-    <form action="/login" method="post" autocomplete='on'>
+    <form action="/oauth" method="post" autocomplete='on'>
+        <input type="hidden" name="redirectURL" value="<%-redirectURL%>">
         <div>
             <span>Username</span>
             <input type="text" placeholder="Username" name="username" autocomplete="username">
@@ -22,6 +23,9 @@
     </form>
     <a href="/">home</a>
     <a href="/signup">Signup</a>
+    <script>
+        console.log('<%-redirectURL%>')
+    </script>
 </body>
 
 </html>
