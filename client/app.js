@@ -44,7 +44,6 @@ app.get('/', isAuthenticated, (request, response) => {
 
 app.get('/login', (request, response) => {
   let username = request.query.username
-  console.log(username)
   if (username) {
     request.session.user = username
     request.session.save()

@@ -152,7 +152,6 @@ app.get('/deleteAccount', (request, response) => {
 
 app.get('/oauth', (request, response) => {
   let redirectURL = request.query.redirectURL
-  console.log(redirectURL)
   response.render('oauth.ejs', {
     redirectURL: redirectURL
   })
