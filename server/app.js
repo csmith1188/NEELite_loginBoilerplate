@@ -3,10 +3,12 @@ const express = require('express')
 const session = require('express-session')
 const sqlite3 = require('sqlite3').verbose()
 const bcrypt = require('bcrypt')
+const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 
 
 // Database Setup
-const database = new sqlite3.Database('./database.db', sqlite3.OPEN_READWRITE)
+const database = new sqlite3.Database('./server/database.db', sqlite3.OPEN_READWRITE)
 
 
 // Express Setup
@@ -14,6 +16,7 @@ const app = express()
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.set('view engine', 'ejs')
+app.set('views', './server/views');
 app.use(session({
   secret: 'D$jtDD_}g#T+vg^%}qpi~+2BCs=R!`}O',
   resave: false,
@@ -29,6 +32,14 @@ function isAuthenticated(request, response, next) {
   else response.redirect('/login')
 }
 
+/*const tokenGenerator = (issuer, lifeSpan, secret) => {
+  var payload = {
+    "iss": issuer,
+    "exp": (new Date() / 1000) + lifeSpan
+  };
+  var token = jwt.sign(payload, secret, algorithm = 'RS256');
+  return token;
+}; */
 
 // Webpages
 app.get('/', isAuthenticated, (request, response) => {
@@ -85,8 +96,10 @@ app.post('/signup', (request, response) => {
         if (!results) {
           if (password == confirmPassword) {
             bcrypt.hash(password, 10, (error, hashedPassword) => {
-              if (error) console.log(error)
-              database.get(`INSERT INTO users (username, password ) VALUES (?, ?)`, [username, hashedPassword], (error) => {
+              if (error) console.log(error);
+              let secret = crypto.randomBytes(512);
+              secret = secret.toString('hex');
+              database.get(`INSERT INTO users (username, password, secret ) VALUES (?, ?, ?)`, [username, hashedPassword, secret], (error) => {
                 if (error) console.log(error)
                 request.session.user = username
                 response.redirect('/')
@@ -154,7 +167,7 @@ app.get('/oauth', (request, response) => {
   let redirectURL = request.query.redirectURL
   response.render('oauth.ejs', {
     redirectURL: redirectURL
-  })
+  });
 })
 
 app.post('/oauth', (request, response) => {
@@ -166,15 +179,18 @@ app.post('/oauth', (request, response) => {
   request.session.regenerate((error) => {
     if (error) console.log(error)
     if (username && password) {
-      database.get(`SELECT * FROM users Where username = ?`, [username], (error, results) => {
+      database.get(`SELECT * FROM users WHERE username = ?`, [username], (error, results) => {
         if (error) console.log(error)
         if (results) {
           let databasePassword = results.password
+          console.log(results.password)
           bcrypt.compare(password, databasePassword, (error, isMatch) => {
             if (isMatch) {
               if (error) console.log(error)
-              request.session.user = username
-              response.redirect(`${redirectURL}?username=${username}`)
+              console.log(password)
+              var uniToken = jwt.sign({ username: username }, results.secret, {expiresIn: '5d'});
+              console.log(uniToken);
+              response.redirect(`${redirectURL}?token=${uniToken}`);
             } else response.redirect(`/oauth?redirectURL=${redirectURL}`)
           })
         } else response.redirect(`/oauth?redirectURL=${redirectURL}`)
