@@ -198,36 +198,42 @@ app.get('/oauth', (request, response) => {
   });
 })
 
-/* This is what happens after the user submits their authentication data. It saves the username, password, and the redirectURL that is submitted. If there is a username and
-password submitted, then it gets results from the database that match the username. If there are results returned, it saves the database password to a variable. It then compares
-the submitted password to the database password. */
+// This is what happens after the user submits their authentication data.
 app.post('/oauth', (request, response) => {
+  // It saves the username, password, and the redirectURL that is submitted.
   const {
     username,
     password,
     redirectURL
   } = request.body
+  // If there is a username and password submitted, then it gets results from the database that match the username.
     if (username && password) {
+      // If there are results returned, it saves the database password to a variable.
       database.get(`SELECT * FROM users WHERE username = ?`, [username], (error, results) => {
         if (error) console.log(error)
         if (results) {
           let databasePassword = results.password
           console.log(results.password)
+          // It then compares the submitted password to the database password.
           bcrypt.compare(password, databasePassword, (error, isMatch) => {
+            // If it matches, a token is generated, and the page redirects to the specified redirectURL using the token as a query parameter. 
             if (isMatch) {
               if (error) console.log(error)
               console.log(password)
               var uniToken = jwt.sign({ username: username }, results.secret, {expiresIn: '5d'});
               console.log(uniToken);
               response.redirect(`${redirectURL}?token=${uniToken}`);
+            // If it does not match, then it redirects back to the oauth page.
             } else response.redirect(`/oauth?redirectURL=${redirectURL}`)
           })
+        // If there are no results, then it redirects back to the oauth page. 
         } else response.redirect(`/oauth?redirectURL=${redirectURL}`)
       })
+    // If either a username, password, or both is not returned, then it rdirects back to the oauth page.
     } else response.redirect(`/oauth?redirectURL=${redirectURL}`)
 })
 
-
+// This runs the server.
 app.listen(port, (err) => {
   if (err) {
     console.error(err)
