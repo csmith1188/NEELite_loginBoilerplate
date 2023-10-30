@@ -1,12 +1,12 @@
 // Import Modules
 const express = require('express')
 const session = require('express-session')
-const sqlite3 = require('sqlite3').verbose()
 const jwt = require('jsonwebtoken');
 
 
 // Database Setup (not used here, however for independent projects using this API this would be useful for storing user data for that project)
-const database = new sqlite3.Database('./client/database.db', sqlite3.OPEN_READWRITE)
+// const sqlite3 = require('sqlite3').verbose()
+// const database = new sqlite3.Database('./client/database.db', sqlite3.OPEN_READWRITE)
 
 
 // Express Setup
@@ -27,7 +27,7 @@ app.use(session({
 
 //Saves port of your choosing.
 const port = 4000
-/* Auth URL is wherever you'd like to redirect for verification/authentication. For example, when creating a plugin (which is most recommended for usage of this API), 
+/* Auth URL is wherever you'd like to redirect for verification/authentication. For example, when creating a plugin (which is most recommended for usage of this API),
    you'd want to set AUTH_URL to whatever your plugin is for in order for it to authenticate the user in both the plugin and server. */
 const AUTH_URL = 'http://127.0.0.1:3000/oauth'
 /* This is whatever your login page is set to, in this case, it is simply '/login'. */
@@ -62,7 +62,7 @@ app.get('/login', (req, res) => {
    as said query parameter. */
   if (req.query.token) {
     console.log(req.query.token);
-    /* If there is a token parameter present, then it decodes the token and stores it into a temporary variable. This is because, every time the user reconnects to the server, 
+    /* If there is a token parameter present, then it decodes the token and stores it into a temporary variable. This is because, every time the user reconnects to the server,
     there will be a new token generated. */
     let tokenData = jwt.decode(req.query.token);
     /* It then saves the entirety of the token data into a cookie, with only the username data being stored in another. */
@@ -70,19 +70,19 @@ app.get('/login', (req, res) => {
     req.session.user = tokenData.username;
     /* From there, it redirects back to your homepage. */
     res.redirect('/');
-    /* If there is not token, it redirects you to the server authentication page, with the query perameter of 'redirectURL' being given the THIS_URL variable, 
+    /* If there is not token, it redirects you to the server authentication page, with the query perameter of 'redirectURL' being given the THIS_URL variable,
     which should be your login page (or your page of choice).  */
   } else {
     res.redirect(AUTH_URL + `?redirectURL=${THIS_URL}`)
   };
 })
 
-// This logsout the user by overwriting the user cookie, which contains the username. It then saves the session and reloads it. It then redirects the user to the login page. 
+// This logsout the user by overwriting the user cookie, which contains the username. It then saves the session and reloads it. It then redirects the user to the login page.
 app.get('/logout', (request, response) => {
   request.session.user = null
   request.session.save((error) => {
     if (error) throw error
-      response.redirect('/login')
+    response.redirect('/login')
   })
 })
 
