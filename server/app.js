@@ -60,27 +60,27 @@ app.post('/login', (request, response) => {
   // It saves the username and password collected from the data submitted.
   const { username, password } = request.body
   // If both a username and password are saved, then it will grab data from the database where the username matches.
-    if (username && password) {
-      database.get(`SELECT * FROM users Where username = ?`, [username], (error, results) => {
-        if (error) console.log(error)
-        if (results) {
-          // Using these results, it will save the password present in the database to a variable.
-          let databasePassword = results.password
-          // It then compares the password submitted and the database password to see if they match.
-          bcrypt.compare(password, databasePassword, (error, isMatch) => {
-            if (isMatch) {
-              if (error) console.log(error)
-              // If they do, save the username to the user cookie and redirect to the home page.
-              request.session.user = username
-              response.redirect('/')
+  if (username && password) {
+    database.get(`SELECT * FROM users Where username = ?`, [username], (error, results) => {
+      if (error) console.log(error)
+      if (results) {
+        // Using these results, it will save the password present in the database to a variable.
+        let databasePassword = results.password
+        // It then compares the password submitted and the database password to see if they match.
+        bcrypt.compare(password, databasePassword, (error, isMatch) => {
+          if (isMatch) {
+            if (error) console.log(error)
+            // If they do, save the username to the user cookie and redirect to the home page.
+            request.session.user = username
+            response.redirect('/')
             // If the passwords do not match, redirect to the '/login' page again to resubmit data.
-            } else response.redirect('/login')
-          })
+          } else response.redirect('/login')
+        })
         // If there are no results in the database, redirect to the '/login' page again to resubmit data.
-        } else response.redirect('/login')
-      })
+      } else response.redirect('/login')
+    })
     // If there is no username, no password, or neither present in the submitted data, then redirect to the '/login' page again to resubmit data.
-    } else response.redirect('/login')
+  } else response.redirect('/login')
 })
 
 // This is what happens when the user tries to sign up. It simply renders the 'signup.ejs' page.
@@ -98,42 +98,42 @@ app.post('/signup', (request, response) => {
   // It saves the data, including the confirmed password.
   const { username, password, confirmPassword } = request.body
   // If all of the data is collected, it tries to get data from the database based on the username.
-    if (username && password && confirmPassword) {
-      database.get(`SELECT * FROM users Where username = ?`, [username], (error, results) => {
-        if (error) console.log(error)
-        //If there are no results returned, meaning the username doesn't exist, and if the password and the confirmed password match, then it encrypts the password.
-        if (!results) {
-          if (password == confirmPassword) {
-            bcrypt.hash(password, 10, (error, hashedPassword) => {
-              if (error) console.log(error);
-              // Then it creates a secret based on 512 random bytes collected and saves it after converting it to a hex string.
-              let secret = crypto.randomBytes(512);
-              secret = secret.toString('hex');
-              // Afterwards, it inserts the data into the database, creating a new user.
-              database.get(`INSERT INTO users (username, password, secret ) VALUES (?, ?, ?)`, [username, hashedPassword, secret], (error) => {
-                if (error) console.log(error)
-                // It also creates a user cookie which the username is stored into, and then it redirects to the homepage.
-                request.session.user = username
-                response.redirect('/')
-              })
+  if (username && password && confirmPassword) {
+    database.get(`SELECT * FROM users Where username = ?`, [username], (error, results) => {
+      if (error) console.log(error)
+      //If there are no results returned, meaning the username doesn't exist, and if the password and the confirmed password match, then it encrypts the password.
+      if (!results) {
+        if (password == confirmPassword) {
+          bcrypt.hash(password, 10, (error, hashedPassword) => {
+            if (error) console.log(error);
+            // Then it creates a secret based on 512 random bytes collected and saves it after converting it to a hex string.
+            let secret = crypto.randomBytes(512);
+            secret = secret.toString('hex');
+            // Afterwards, it inserts the data into the database, creating a new user.
+            database.get(`INSERT INTO users (username, password, secret ) VALUES (?, ?, ?)`, [username, hashedPassword, secret], (error) => {
+              if (error) console.log(error)
+              // It also creates a user cookie which the username is stored into, and then it redirects to the homepage.
+              request.session.user = username
+              response.redirect('/')
             })
+          })
           // If the passwords don't match, redirect to the sign up page to re-enter data.
-          } else response.redirect('/signup')
-        // If there are results in the database, then redirect to the sign up page to re-enter results.
         } else response.redirect('/signup')
-      })
+        // If there are results in the database, then redirect to the sign up page to re-enter results.
+      } else response.redirect('/signup')
+    })
     // If there is no username, password, and/or confirmed password, then redirect to the sign up page to re-enter data.
-    } else response.redirect('/signup')
+  } else response.redirect('/signup')
 })
 
-// This is what happens when the user tries to log out.  
+// This is what happens when the user tries to log out.
 app.get('/logout', (request, response) => {
   // It resets the session.user (or the user "cookie", as referred to earlier), and then it saves it.
   request.session.user = null
   request.session.save((error) => {
     if (error) console.log(error)
     // After the new user cookie is saved, it redirects to the login page.
-      response.redirect('/login')
+    response.redirect('/login')
   })
 })
 
@@ -170,10 +170,10 @@ app.post('/changePassword', (request, response) => {
               response.redirect('/logout')
             })
           })
-        // If the passwords don't match in either way, then it redirects the user to the home screen.
+          // If the passwords don't match in either way, then it redirects the user to the home screen.
         } else response.redirect('/')
       })
-    // If there are no results given from the database, then it redirects the user to the home screen.
+      // If there are no results given from the database, then it redirects the user to the home screen.
     } else response.redirect('/')
   })
 })
@@ -207,30 +207,30 @@ app.post('/oauth', (request, response) => {
     redirectURL
   } = request.body
   // If there is a username and password submitted, then it gets results from the database that match the username.
-    if (username && password) {
-      // If there are results returned, it saves the database password to a variable.
-      database.get(`SELECT * FROM users WHERE username = ?`, [username], (error, results) => {
-        if (error) console.log(error)
-        if (results) {
-          let databasePassword = results.password
-          console.log(results.password)
-          // It then compares the submitted password to the database password.
-          bcrypt.compare(password, databasePassword, (error, isMatch) => {
-            // If it matches, a token is generated, and the page redirects to the specified redirectURL using the token as a query parameter. 
-            if (isMatch) {
-              if (error) console.log(error)
-              console.log(password)
-              var uniToken = jwt.sign({ username: username }, results.secret, {expiresIn: '5d'});
-              console.log(uniToken);
-              response.redirect(`${redirectURL}?token=${uniToken}`);
+  if (username && password) {
+    // If there are results returned, it saves the database password to a variable.
+    database.get(`SELECT * FROM users WHERE username = ?`, [username], (error, results) => {
+      if (error) console.log(error)
+      if (results) {
+        let databasePassword = results.password
+        console.log(results.password)
+        // It then compares the submitted password to the database password.
+        bcrypt.compare(password, databasePassword, (error, isMatch) => {
+          // If it matches, a token is generated, and the page redirects to the specified redirectURL using the token as a query parameter.
+          if (isMatch) {
+            if (error) console.log(error)
+            console.log(password)
+            var uniToken = jwt.sign({ username: username }, results.secret, { expiresIn: '5d' });
+            console.log(uniToken);
+            response.redirect(`${redirectURL}?token=${uniToken}`);
             // If it does not match, then it redirects back to the oauth page.
-            } else response.redirect(`/oauth?redirectURL=${redirectURL}`)
-          })
-        // If there are no results, then it redirects back to the oauth page. 
-        } else response.redirect(`/oauth?redirectURL=${redirectURL}`)
-      })
+          } else response.redirect(`/oauth?redirectURL=${redirectURL}`)
+        })
+        // If there are no results, then it redirects back to the oauth page.
+      } else response.redirect(`/oauth?redirectURL=${redirectURL}`)
+    })
     // If either a username, password, or both is not returned, then it rdirects back to the oauth page.
-    } else response.redirect(`/oauth?redirectURL=${redirectURL}`)
+  } else response.redirect(`/oauth?redirectURL=${redirectURL}`)
 })
 
 // This runs the server.
